@@ -1,0 +1,22 @@
+{
+  "name": "vue-on-wechat",
+  "version": "1.0.0",
+  "description": "Vue.js on WeChat mini program",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git@git.lianwiki.cn:npm/vue-on-wechat.git"
+  },
+  "keywords": [
+    "Vue",
+    "Vue.js",
+    "mpvue",
+    "mini-program",
+    "wechat",
+    "wx",
+    "mini"
+  ],
+  "author": "Calvin (421270473@qq.com)",
+  "license": "MIT"
+}
