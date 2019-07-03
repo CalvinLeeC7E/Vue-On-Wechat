@@ -1,6 +1,6 @@
 {
   "name": "vue-on-wechat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vue.js on WeChat mini program",
   "main": "index.js",
   "scripts": {},
