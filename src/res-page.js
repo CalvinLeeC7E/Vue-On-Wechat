@@ -15,13 +15,13 @@ const VUE_DATA_COMPUTED_NAME = '_computedWatchers'
 
 class ResDataHelper {
   constructor (vueData = {}, wxCtx) {
+    this.canSetViewData = true
     this._bindDataChange(wxCtx)
     const vm = new VueData({
       ...vueData
     }, (vmCtx) => {
       if (this._vueDataChange) this._vueDataChange(vmCtx)
     })
-    this.canSetViewData = true
     this.vm = vm
   }
 
@@ -43,9 +43,9 @@ class ResDataHelper {
   }
 
   // 恢复设置Data
-  resumeSetViewData (wxCtx) {
+  resumeSetViewData () {
     this.canSetViewData = true
-    this._setViewData(wxCtx, ResDataHelper.stdData(this.vm))
+    this._vueDataChange(this.vm)
   }
 
   // 销毁实例
@@ -65,18 +65,30 @@ class ResDataHelper {
 
   // 获取VueData标准数据
   static stdData (vm) {
-    const keys = [
-      VUE_DATA_DATA_NAME,
-      VUE_DATA_PROP_NAME,
-      VUE_DATA_COMPUTED_NAME
-    ]
-    return keys
-      .map(item => Object.keys(vm[item] || {}))
-      .reduce((res, item) => res.concat(item), [])
-      .reduce((res, key) => {
-        res[key] = vm[key]
-        return res
-      }, {})
+    const vmData = {}
+    ResDataHelper.proxy(vmData, vm, VUE_DATA_DATA_NAME)
+    ResDataHelper.proxy(vmData, vm, VUE_DATA_PROP_NAME)
+    ResDataHelper.proxy(vmData, vm, VUE_DATA_COMPUTED_NAME)
+    return vmData
+  }
+
+  // set/get 方法转发
+  static proxy (target, source, field) {
+    const vData = source[field]
+    if (!vData) return
+    const sharedPropertyDefinition = {
+      enumerable: true,
+      configurable: true
+    }
+    for (let key in vData) {
+      sharedPropertyDefinition.get = function proxyGetter () {
+        return source[key]
+      }
+      sharedPropertyDefinition.set = function proxySetter (val) {
+        source[key] = val
+      }
+      Object.defineProperty(target, key, sharedPropertyDefinition)
+    }
   }
 }
 
@@ -94,23 +106,20 @@ function ResPage (options) {
       if (oriHook) oriHook.apply(this, args)
     }
   }
-  const mixinCurrentContext = function (vData) {
-    if (!vData) return
-    Object.defineProperties(this, Object.getOwnPropertyDescriptors(vData))
-  }
+
   // onLoad
   wrapHook('onLoad', function () {
     const rd = new ResDataHelper({data, props, computed, methods, watch}, this)
     this.__rd__ = rd
     this.$vm = rd.getVM()
     // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
-    mixinCurrentContext.call(this, this.$vm[VUE_DATA_DATA_NAME])
-    mixinCurrentContext.call(this, this.$vm[VUE_DATA_PROP_NAME])
-    mixinCurrentContext.call(this, this.$vm[VUE_DATA_COMPUTED_NAME])
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_DATA_NAME)
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_PROP_NAME)
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_COMPUTED_NAME)
   })
   // onShow
   wrapHook('onShow', function () {
-    this.__rd__.resumeSetViewData(this)
+    this.__rd__.resumeSetViewData()
   })
   // onHide
   wrapHook('onHide', function () {
