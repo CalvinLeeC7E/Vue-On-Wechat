@@ -72,22 +72,31 @@ class ResDataHelper {
     return vmData
   }
 
-  // set/get 方法转发
+  // setter/getter 方法深度转发
   static proxy (target, source, field) {
-    const vData = source[field]
+    const vData = field ? source[field] : source
     if (!vData) return
     const sharedPropertyDefinition = {
       enumerable: true,
       configurable: true
     }
     for (let key in vData) {
-      sharedPropertyDefinition.get = function proxyGetter () {
-        return source[key]
+      if (typeof source[key] === 'object') {
+        if (source[key] instanceof Array) {
+          target[key] = []
+        } else if (source[key] instanceof Object) {
+          target[key] = {}
+        }
+        ResDataHelper.proxy(target[key], source[key])
+      } else {
+        sharedPropertyDefinition.get = function proxyGetter () {
+          return source[key]
+        }
+        sharedPropertyDefinition.set = function proxySetter (val) {
+          source[key] = val
+        }
+        Object.defineProperty(target, key, sharedPropertyDefinition)
       }
-      sharedPropertyDefinition.set = function proxySetter (val) {
-        source[key] = val
-      }
-      Object.defineProperty(target, key, sharedPropertyDefinition)
     }
   }
 }
