@@ -74,30 +74,50 @@ class ResDataHelper {
 
   // setter/getter 方法深度转发
   static proxy (target, source, field) {
-    const vData = field ? source[field] : source
-    if (!vData) return
-    const sharedPropertyDefinition = {
-      enumerable: true,
-      configurable: true
+    function defineProperty (target, key, getter, setter) {
+      const sharedPropertyDefinition = {
+        enumerable: true,
+        configurable: true
+      }
+      sharedPropertyDefinition.get = getter
+      sharedPropertyDefinition.set = setter
+      Object.defineProperty(target, key, sharedPropertyDefinition)
     }
-    for (let key in vData) {
-      if (typeof source[key] === 'object') {
-        if (source[key] instanceof Array) {
-          target[key] = []
-        } else if (source[key] instanceof Object) {
-          target[key] = {}
-        }
-        ResDataHelper.proxy(target[key], source[key])
-      } else {
-        sharedPropertyDefinition.get = function proxyGetter () {
-          return source[key]
-        }
-        sharedPropertyDefinition.set = function proxySetter (val) {
-          source[key] = val
-        }
-        Object.defineProperty(target, key, sharedPropertyDefinition)
+
+    // 创建临时对象
+    function createTmpTarget (source) {
+      if (source instanceof Array) {
+        return []
+      } else if (source instanceof Object) {
+        return {}
       }
     }
+
+    function _proxy (target, source, field) {
+      const vData = field ? source[field] : source
+      if (!vData) return
+      for (let key in vData) {
+        if (typeof source[key] === 'object') {
+          // 引用类型处理
+          const _target = createTmpTarget(source[key])
+          _proxy(_target, source[key])
+          defineProperty(target, key, function () {
+            return _target
+          }, function (val) {
+            source[key] = val
+          })
+        } else {
+          // 值类型处理
+          defineProperty(target, key, function () {
+            return source[key]
+          }, function (val) {
+            source[key] = val
+          })
+        }
+      }
+    }
+
+    _proxy(target, source, field)
   }
 }
 
