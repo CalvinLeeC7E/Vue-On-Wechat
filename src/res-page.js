@@ -99,11 +99,12 @@ class ResDataHelper {
       for (let key in vData) {
         if (typeof source[key] === 'object') {
           // 引用类型处理
-          const _target = createTmpTarget(source[key])
+          let _target = createTmpTarget(source[key])
           _proxy(_target, source[key])
           defineProperty(target, key, function () {
             return _target
           }, function (val) {
+            _target = val
             source[key] = val
           })
         } else {
