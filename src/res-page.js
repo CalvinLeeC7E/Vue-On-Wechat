@@ -97,7 +97,7 @@ class ResDataHelper {
       const vData = field ? source[field] : source
       if (!vData) return
       for (let key in vData) {
-        if (typeof source[key] === 'object') {
+        if (typeof source[key] === 'object' && Object.keys(source[key]).length) {
           // 引用类型处理
           let _target = createTmpTarget(source[key])
           _proxy(_target, source[key])
