@@ -100,6 +100,10 @@ class ResDataHelper {
         if (source[key] !== null && typeof source[key] === 'object' && Object.keys(source[key]).length) {
           // 引用类型处理
           let _target = createTmpTarget(source[key])
+          // 设置原型链方法
+          if ('__proto__' in source[key]) {
+            _target.__proto__ = source[key].__proto__
+          }
           _proxy(_target, source[key])
           defineProperty(target, key, function () {
             return _target
