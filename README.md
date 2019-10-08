@@ -2,6 +2,10 @@
 
 VueJs驱动的微信小程序，提供VueJs一样的开发体验。
 
+## 最新版本
+
+* 1.2.0
+
 ## 安装
 
 ```bash
@@ -9,6 +13,8 @@ npm i vue-on-wechat -S
 ```
 
 ## 使用
+
+ResPage
 
 ```javascript
 const {ResPage} = require('vue-on-wechat')
@@ -21,12 +27,37 @@ ResPage({
 })
 ```
 
+ResComponent
+
+```javascript
+const {ResComponent} = require('vue-on-wechat')
+ResComponent({
+  properties: {
+    name: {
+      type: String,
+      value: 'im name'
+    },
+    age: Number
+  },
+  data () {
+    return {
+      content: 'just content'
+    }
+  },
+  computed: {
+    cName () {
+      return `cName = ${this.name}`
+    }
+  },
+})
+```
+
 ## Vuex的集成
 
 定义一个Store模块
 
 ```javascript
-import {Vue, Vuex} from 'vue-on-wechat'
+const {Vue, Vuex} = require('vue-on-wechat')
 Vue.use(Vuex)
 module.exports = new Vuex.Store({
   state: {
@@ -41,6 +72,8 @@ module.exports = new Vuex.Store({
 ```
 
 在业务中使用Store模块
+
+ResPage与ResComponent均支持Store。
 
 ```javascript
 const {ResPage} = require('vue-on-wechat')
@@ -57,3 +90,4 @@ ResPage({
 * Vue
 * Vuex
 * ResPage
+* ResComponent
