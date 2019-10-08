@@ -15,8 +15,8 @@ const VUE_DATA_PROP_NAME = '_props'
 const VUE_DATA_COMPUTED_NAME = '_computedWatchers'
 
 class ResDataHelper {
-  constructor (vueData = {}, wxCtx) {
-    this.canSetViewData = true
+  constructor (vueData = {}, wxCtx, setViewData = true) {
+    this.canSetViewData = setViewData
     this._bindDataChange(wxCtx)
     const vm = new VueData({
       ...vueData
@@ -144,7 +144,7 @@ function ResPage (options) {
 
   // onLoad
   wrapHook('onLoad', function () {
-    const rd = new ResDataHelper({data, props, computed, methods, watch}, this)
+    const rd = new ResDataHelper({data, props, computed, methods, watch}, this, true)
     this.__rd__ = rd
     this.$vm = rd.getVM()
     // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
@@ -201,15 +201,19 @@ function ResComponent (options) {
   // 检查是否有lifetimes
   if (!options['lifetimes']) options['lifetimes'] = {}
   if (!options['pageLifetimes']) options['pageLifetimes'] = {}
-  // attached
-  wrapHook(options['lifetimes'], 'attached', function () {
-    const rd = new ResDataHelper({data, props: vueProps, computed, watch}, this)
+  wrapHook(options, 'created', function () {
+    // 组件此生命周期中，不能调用setData，所以setViewData设置为false，在后续的生命周期函数中恢复SetViewData。
+    const rd = new ResDataHelper({data, props: vueProps, computed, watch}, this, false)
     this.__rd__ = rd
     this.$vm = rd.getVM()
     // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
     ResDataHelper.proxy(this, this.$vm, VUE_DATA_DATA_NAME)
     ResDataHelper.proxy(this, this.$vm, VUE_DATA_PROP_NAME)
     ResDataHelper.proxy(this, this.$vm, VUE_DATA_COMPUTED_NAME)
+  })
+  // attached
+  wrapHook(options['lifetimes'], 'attached', function () {
+    this.__rd__.resumeSetViewData()
   })
   // page onShow
   wrapHook(options['pageLifetimes'], 'show', function () {
