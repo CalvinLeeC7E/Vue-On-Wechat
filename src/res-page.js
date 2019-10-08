@@ -8,6 +8,7 @@ const throttle = require('../lib/lodash-throttle')
 const DataDiff = require('./data-diff')
 global.App = global.App || App
 global.Page = global.Page || Page
+global.Component = global.Component || Component
 
 const VUE_DATA_DATA_NAME = '_data'
 const VUE_DATA_PROP_NAME = '_props'
@@ -170,4 +171,64 @@ function ResPage (options) {
   global.Page(pageOptions)
 }
 
-module.exports = ResPage
+function ResComponent (options) {
+  const {data, properties, computed, watch} = options
+  delete options.data
+  delete options.computed
+  delete options.watch
+  const wrapHook = function (handler, oriHookName, cb) {
+    const oriHook = handler[oriHookName]
+    handler[oriHookName] = function (...args) {
+      if (cb) cb.apply(this, args)
+      if (oriHook) oriHook.apply(this, args)
+    }
+  }
+  // 转化为符合Vue的Prop形式
+  const vueProps = Object.keys(properties).reduce((res, item) => {
+    if (typeof properties[item] === 'object') {
+      properties[item]['default'] = properties[item]['value']
+    } else {
+      properties[item] = {
+        type: properties[item]
+      }
+    }
+    wrapHook(properties[item], 'observer', function (val) {
+      if (this.$vm) this.$vm[item] = val
+    })
+    res[item] = properties[item]
+    return res
+  }, {})
+  // 检查是否有lifetimes
+  if (!options['lifetimes']) options['lifetimes'] = {}
+  if (!options['pageLifetimes']) options['pageLifetimes'] = {}
+  // attached
+  wrapHook(options['lifetimes'], 'attached', function () {
+    const rd = new ResDataHelper({data, props: vueProps, computed, watch}, this)
+    this.__rd__ = rd
+    this.$vm = rd.getVM()
+    // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_DATA_NAME)
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_PROP_NAME)
+    ResDataHelper.proxy(this, this.$vm, VUE_DATA_COMPUTED_NAME)
+  })
+  // page onShow
+  wrapHook(options['pageLifetimes'], 'show', function () {
+    this.__rd__.resumeSetViewData()
+  })
+  // page onHide
+  wrapHook(options['pageLifetimes'], 'hide', function () {
+    this.__rd__.pauseSetViewData()
+  })
+  // detached
+  wrapHook(options['lifetimes'], 'detached', function () {
+    this.__rd__.destroy()
+  })
+  const pageOptions = {
+    data: {},
+    ...options
+  }
+  global.Component(pageOptions)
+}
+
+exports.ResPage = ResPage
+exports.ResComponent = ResComponent
