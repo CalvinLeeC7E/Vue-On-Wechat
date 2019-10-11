@@ -172,7 +172,7 @@ function ResPage (options) {
 }
 
 function ResComponent (options) {
-  const {data, properties, computed, watch} = options
+  const {data, properties, methods, computed, watch} = options
   delete options.data
   delete options.computed
   delete options.watch
@@ -203,7 +203,7 @@ function ResComponent (options) {
   if (!options['pageLifetimes']) options['pageLifetimes'] = {}
   wrapHook(options, 'created', function () {
     // 组件此生命周期中，不能调用setData，所以setViewData设置为false，在后续的生命周期函数中恢复SetViewData。
-    const rd = new ResDataHelper({data, props: vueProps, computed, watch}, this, false)
+    const rd = new ResDataHelper({data, props: vueProps, methods, computed, watch}, this, false)
     this.__rd__ = rd
     this.$vm = rd.getVM()
     // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
