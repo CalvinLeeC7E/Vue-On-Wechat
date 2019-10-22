@@ -128,29 +128,45 @@ class ResDataHelper {
 }
 
 function ResPage (options) {
-  const {data, props, computed, methods, watch} = options
+  const {data, props, computed, watch} = options
+  const methods = {
+    ...options.methods
+  }
   delete options.data
   delete options.props
   delete options.computed
   delete options.methods
   delete options.watch
+
+  const proxyOriMethod = function (methodNames) {
+    const wxLifeName = ['onLoad', 'onShow', 'onHide', 'onUnload']
+    for (let methodName of methodNames) {
+      if (typeof options[methodName] === 'function') {
+        methods[methodName] = options[methodName]
+        if (wxLifeName.includes(methodName)) continue
+        options[methodName] = function (...args) {
+          methods[methodName].apply(this.$vm, args)
+        }
+      }
+    }
+  }
+
   const wrapHook = function (oriHookName, cb) {
     const oriHook = options[oriHookName]
     options[oriHookName] = function (...args) {
       if (cb) cb.call(this)
-      if (oriHook) oriHook.apply(this, args)
+      // 函数内使用res上下文
+      if (oriHook) oriHook.apply(this.$vm, args)
     }
   }
+
+  proxyOriMethod(Object.keys(options))
 
   // onLoad
   wrapHook('onLoad', function () {
     const rd = new ResDataHelper({data, props, computed, methods, watch}, this, true)
     this.__rd__ = rd
     this.$vm = rd.getVM()
-    // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_DATA_NAME)
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_PROP_NAME)
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_COMPUTED_NAME)
   })
   // onShow
   wrapHook('onShow', function () {
@@ -180,7 +196,8 @@ function ResComponent (options) {
     const oriHook = handler[oriHookName]
     handler[oriHookName] = function (...args) {
       if (cb) cb.apply(this, args)
-      if (oriHook) oriHook.apply(this, args)
+      // 函数内使用res上下文
+      if (oriHook) oriHook.apply(this.$vm, args)
     }
   }
   // 转化为符合Vue的Prop形式
@@ -198,6 +215,20 @@ function ResComponent (options) {
     res[item] = properties[item]
     return res
   }, {})
+
+  // 转发微信方法至res上下文
+  const proxyMethods = function (methodNames) {
+    const wxMethods = {}
+    for (let methodName of methodNames) {
+      wxMethods[methodName] = function (...args) {
+        methods[methodName].apply(this.$vm, args)
+      }
+    }
+    return wxMethods
+  }
+
+  options.methods = proxyMethods(Object.keys(methods))
+
   // 检查是否有lifetimes
   if (!options['lifetimes']) options['lifetimes'] = {}
   if (!options['pageLifetimes']) options['pageLifetimes'] = {}
@@ -206,10 +237,6 @@ function ResComponent (options) {
     const rd = new ResDataHelper({data, props: vueProps, methods, computed, watch}, this, false)
     this.__rd__ = rd
     this.$vm = rd.getVM()
-    // 将目标数据混合至微信上线文的vm上下文内容绑定至当前微信环境
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_DATA_NAME)
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_PROP_NAME)
-    ResDataHelper.proxy(this, this.$vm, VUE_DATA_COMPUTED_NAME)
   })
   // attached
   wrapHook(options['lifetimes'], 'attached', function () {
