@@ -2,8 +2,11 @@
   "name": "vue-on-wechat",
   "version": "1.2.4",
   "description": "Vue.js on WeChat mini program",
-  "main": "index.js",
-  "scripts": {},
+  "main": "miniprogram_dist/index.js",
+  "miniprogram": "miniprogram_dist",
+  "scripts": {
+    "release": "rollup -c"
+  },
   "repository": {
     "type": "git",
     "url": "git@git.lianwiki.cn:npm/vue-on-wechat.git"
@@ -18,5 +21,10 @@
     "mini"
   ],
   "author": "Calvin (421270473@qq.com)",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.2"
+  }
 }
