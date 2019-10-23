@@ -167,6 +167,7 @@ function ResPage (options) {
     const rd = new ResDataHelper({data, props, computed, methods, watch}, this, true)
     this.__rd__ = rd
     this.$vm = rd.getVM()
+    this.$vm.$ctx = this
   })
   // onShow
   wrapHook('onShow', function () {
@@ -237,6 +238,7 @@ function ResComponent (options) {
     const rd = new ResDataHelper({data, props: vueProps, methods, computed, watch}, this, false)
     this.__rd__ = rd
     this.$vm = rd.getVM()
+    this.$vm.$ctx = this
   })
   // attached
   wrapHook(options['lifetimes'], 'attached', function () {
