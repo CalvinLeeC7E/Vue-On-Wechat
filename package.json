@@ -1,9 +1,12 @@
 {
   "name": "vue-on-wechat",
-  "version": "1.2.4",
+  "version": "1.2.7",
   "description": "Vue.js on WeChat mini program",
   "main": "miniprogram_dist/index.js",
   "miniprogram": "miniprogram_dist",
+  "files": [
+    "miniprogram_dist"
+  ],
   "scripts": {
     "release": "rollup -c"
   },
