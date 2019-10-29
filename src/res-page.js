@@ -145,7 +145,7 @@ function ResPage (options) {
         methods[methodName] = options[methodName]
         if (wxLifeName.includes(methodName)) continue
         options[methodName] = function (...args) {
-          methods[methodName].apply(this.$vm, args)
+          return methods[methodName].apply(this.$vm, args)
         }
       }
     }
@@ -222,7 +222,7 @@ function ResComponent (options) {
     const wxMethods = {}
     for (let methodName of methodNames) {
       wxMethods[methodName] = function (...args) {
-        methods[methodName].apply(this.$vm, args)
+        return methods[methodName].apply(this.$vm, args)
       }
     }
     return wxMethods
