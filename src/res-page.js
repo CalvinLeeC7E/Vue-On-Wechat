@@ -127,6 +127,23 @@ class ResDataHelper {
   }
 }
 
+const invokeWithErrorHandler = function (funHandler, context, args) {
+  if (!funHandler) return
+  try {
+    const funRes = funHandler.apply(context, args)
+    // 检查是否存在Promise下未捕获的异常
+    if (funRes && typeof funRes.then === 'function' && typeof funRes.catch === 'function') {
+      return funRes.catch(err => {
+        if (VueData.config.errorHandler) VueData.config.errorHandler(err)
+      })
+    } else {
+      return funRes
+    }
+  } catch (err) {
+    throw err
+  }
+}
+
 function ResPage (options) {
   const {data, props, computed, watch} = options
   const methods = {
@@ -145,7 +162,7 @@ function ResPage (options) {
         methods[methodName] = options[methodName]
         if (wxLifeName.includes(methodName)) continue
         options[methodName] = function (...args) {
-          return methods[methodName].apply(this.$vm, args)
+          return invokeWithErrorHandler(methods[methodName], this.$vm, args)
         }
       }
     }
@@ -156,7 +173,7 @@ function ResPage (options) {
     options[oriHookName] = function (...args) {
       if (cb) cb.call(this)
       // 函数内使用res上下文
-      if (oriHook) oriHook.apply(this.$vm, args)
+      return invokeWithErrorHandler(oriHook, this.$vm, args)
     }
   }
 
@@ -198,7 +215,7 @@ function ResComponent (options) {
     handler[oriHookName] = function (...args) {
       if (cb) cb.apply(this, args)
       // 函数内使用res上下文
-      if (oriHook) oriHook.apply(this.$vm, args)
+      return invokeWithErrorHandler(oriHook, this.$vm, args)
     }
   }
   // 转化为符合Vue的Prop形式
@@ -222,7 +239,7 @@ function ResComponent (options) {
     const wxMethods = {}
     for (let methodName of methodNames) {
       wxMethods[methodName] = function (...args) {
-        return methods[methodName].apply(this.$vm, args)
+        return invokeWithErrorHandler(methods[methodName], this.$vm, args)
       }
     }
     return wxMethods
